@@ -6,7 +6,8 @@
         Width="1280"
         Height="720"
         MinWidth="900"
-        MinHeight="560">
+        MinHeight="560"
+        DragDrop.AllowDrop="True">
 
   <Window.Resources>
     <!-- 棋盘格底纹：让透明区域看得出来，也让黑白成品与背景有区分 -->
@@ -23,7 +24,15 @@
   <Grid ColumnDefinitions="*,320">
 
     <!-- 预览区 -->
-    <Border Name="PreviewHost" Background="{StaticResource CheckerBrush}" ClipToBounds="True">
+    <!-- Focusable：点击预览区后焦点离开滑杆，左右方向键才能用来切图 -->
+    <Border Name="PreviewHost"
+            Background="{StaticResource CheckerBrush}"
+            ClipToBounds="True"
+            Focusable="True"
+            PointerPressed="OnPreviewPointerPressed"
+            PointerMoved="OnPreviewPointerMoved"
+            PointerReleased="OnPreviewPointerReleased"
+            PointerWheelChanged="OnPreviewWheelChanged">
       <Grid>
         <Canvas Name="PreviewCanvas">
           <!-- 缩放时按最近邻取样，像素边缘保持锐利，才看得清抖动图案 -->
@@ -40,7 +49,10 @@
     <!-- 工具栏 -->
     <Border Grid.Column="1" Background="#1E1E1E" Padding="12">
       <DockPanel LastChildFill="True">
-        <TextBlock Name="StatusText" DockPanel.Dock="Bottom" Margin="0,8,0,0" TextWrapping="Wrap" Opacity="0.8" />
+        <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,8,0,0">
+          <CheckBox Name="ShowOriginalCheckBox" Content="Show Original" />
+          <TextBlock Name="StatusText" TextWrapping="Wrap" Opacity="0.8" />
+        </StackPanel>
 
         <ScrollViewer>
           <StackPanel Spacing="10" Margin="0,0,8,0">
@@ -53,9 +65,27 @@
                     Click="OnOpenClick" />
 
             <StackPanel Spacing="2">
-              <TextBlock Name="ImageCountText" Text="Image 0 of 0" />
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Name="ImageCountText" Text="Image 0 of 0" VerticalAlignment="Center" />
+                <Button Name="PreviousButton"
+                        Grid.Column="1"
+                        Content="&lt;"
+                        Width="32"
+                        IsEnabled="False"
+                        Click="OnPreviousClick"
+                        ToolTip.Tip="Previous image (Left arrow)" />
+                <Button Name="NextButton"
+                        Grid.Column="2"
+                        Content="&gt;"
+                        Width="32"
+                        Margin="4,0,0,0"
+                        IsEnabled="False"
+                        Click="OnNextClick"
+                        ToolTip.Tip="Next image (Right arrow)" />
+              </Grid>
               <TextBlock Name="FileNameText" TextTrimming="CharacterEllipsis" Opacity="0.8" />
               <TextBlock Name="SizeText" Opacity="0.8" />
+              <TextBlock Name="ZoomText" Text="Zoom: 1x" Opacity="0.8" ToolTip.Tip="Mouse wheel to zoom, drag to pan" />
             </StackPanel>
 
             <controls:ParameterSlider x:Name="ScaleSlider" Header="Scale" Minimum="0.01" Maximum="1" DefaultValue="1" Value="1" />

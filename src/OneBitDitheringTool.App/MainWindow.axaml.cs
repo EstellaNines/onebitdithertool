@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using OneBitDitheringTool.App.Rendering;
 using OneBitDitheringTool.Core;
@@ -38,10 +39,16 @@ public partial class MainWindow : Window
         WireParameterEvents();
         UpdatePanels();
 
+        // 拖放事件要在窗口层面接收：用户可能把文件拖到窗口的任何位置，而不只是预览区
+        AddHandler(DragDrop.DragOverEvent, OnDragOver);
+        AddHandler(DragDrop.DropEvent, OnDrop);
+        ShowOriginalCheckBox.IsCheckedChanged += (_, _) => RefreshPreview();
+
         Closed += (_, _) =>
         {
             _coordinator.Dispose();
             _resultBitmap?.Dispose();
+            _originalBitmap?.Dispose();
         };
     }
 

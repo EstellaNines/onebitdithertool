@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
@@ -48,8 +49,26 @@ public partial class MainWindow
         _files = [.. paths];
         _index = 0;
         _centerOnNextResult = true;
+        UpdateNavigationButtons();
         _loadTask = LoadCurrentAsync();
         return _loadTask;
+    }
+
+    /// <summary>
+    /// 处理被拖入窗口的文件与文件夹：整理出受支持的图片并载入。
+    /// </summary>
+    /// <param name="paths">被拖入的文件或文件夹路径。</param>
+    /// <returns>表示处理的任务。</returns>
+    internal async Task HandleDroppedPathsAsync(IEnumerable<string> paths)
+    {
+        List<string> images = ImageCollector.Collect(paths);
+        if (images.Count == 0)
+        {
+            SetStatus("No supported images (png, jpg, jpeg) were dropped.");
+            return;
+        }
+
+        await LoadFilesAsync(images);
     }
 
     /// <summary>
@@ -87,6 +106,68 @@ public partial class MainWindow
         }
     }
 
+    private void OnDragOver(object? sender, DragEventArgs e)
+    {
+        e.DragEffects = e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private async void OnDrop(object? sender, DragEventArgs e)
+    {
+        e.Handled = true;
+        try
+        {
+            // 路径必须在 await 之前取出：拖放数据只在事件处理期间有效，之后可能已被释放
+            string[] paths = [.. (e.DataTransfer.TryGetFiles() ?? []).Select(item => item.TryGetLocalPath()).OfType<string>()];
+            await HandleDroppedPathsAsync(paths);
+        }
+        catch (Exception exception)
+        {
+            SetStatus($"Drop failed: {exception.Message}");
+        }
+    }
+
+    private void OnPreviousClick(object? sender, RoutedEventArgs e) => Navigate(-1);
+
+    private void OnNextClick(object? sender, RoutedEventArgs e) => Navigate(1);
+
+    /// <inheritdoc />
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        // 先让获得焦点的控件处理：滑杆与下拉框自己要用方向键，它们处理过就不该再拿来切图
+        base.OnKeyDown(e);
+        if (e.Handled || _files.Count < 2)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Right)
+        {
+            Navigate(1);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Left)
+        {
+            Navigate(-1);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// 切到前一张或后一张，首尾相接。
+    /// </summary>
+    /// <param name="delta">-1 为前一张，1 为后一张。</param>
+    private void Navigate(int delta)
+    {
+        if (_files.Count < 2)
+        {
+            return;
+        }
+
+        _index = (_index + delta + _files.Count) % _files.Count;
+        _loadTask = LoadCurrentAsync();
+    }
+
     private async Task LoadCurrentAsync()
     {
         int version = ++_loadVersion;
@@ -116,6 +197,7 @@ public partial class MainWindow
         }
 
         _source = image;
+        ReleaseOriginal();
         UpdateInfoText();
         RequestRender();
     }
@@ -155,12 +237,13 @@ public partial class MainWindow
 
     private void ShowResult(OneBitImage result)
     {
-        WriteableBitmap bitmap = PreviewBitmaps.FromOneBit(result);
+        WriteableBitmap? previous = _resultBitmap;
+        _resultBitmap = PreviewBitmaps.FromOneBit(result);
 
-        // 先让界面换上新位图，再释放旧的：界面还在引用旧位图时释放它，下一次绘制会出错
-        ReplacePreview(bitmap);
-        _resultBitmap?.Dispose();
-        _resultBitmap = bitmap;
+        // 先让界面换上新位图，再释放旧的：界面还在引用旧位图时释放它，下一次绘制会出错。
+        // 若此刻显示的是原图，这次刷新不会动界面，旧结果位图本来就没在用
+        RefreshPreview();
+        previous?.Dispose();
     }
 
     private void ClearImage()
@@ -169,6 +252,8 @@ public partial class MainWindow
         PreviewImage.Source = null;
         _resultBitmap?.Dispose();
         _resultBitmap = null;
+        _originalBitmap?.Dispose();
+        _originalBitmap = null;
         EmptyHint.IsVisible = true;
         ImageCountText.Text = $"Image {_index + 1} of {_files.Count}";
         FileNameText.Text = string.Empty;
@@ -183,6 +268,8 @@ public partial class MainWindow
         Title = $"OneBitDitheringTool - {name}";
         UpdateSizeText();
     }
+
+    private void UpdateNavigationButtons() => PreviousButton.IsEnabled = NextButton.IsEnabled = _files.Count > 1;
 
     private void UpdateSizeText()
     {
