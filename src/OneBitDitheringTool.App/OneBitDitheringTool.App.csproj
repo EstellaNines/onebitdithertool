@@ -17,6 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- 界面之外的内部逻辑（如图片方向转正）保持 internal，只在测试中单独验证 -->
+    <InternalsVisibleTo Include="OneBitDitheringTool.App.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\OneBitDitheringTool.Core\OneBitDitheringTool.Core.csproj" />
   </ItemGroup>
 
