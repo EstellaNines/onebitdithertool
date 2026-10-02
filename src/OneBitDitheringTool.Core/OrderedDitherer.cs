@@ -35,6 +35,19 @@ public sealed class OrderedDitherer : IDitherer
         FromThresholds(BayerMatrix.Generate(width, height), width, height, width * height, strength);
 
     /// <summary>
+    /// 用内置的聚点矩阵创建有序抖动器。
+    /// </summary>
+    /// <param name="matrix">阈值矩阵，通常取自 <see cref="OrderedMatrices"/>。</param>
+    /// <param name="strength">抖动强度，含义同 <see cref="Bayer"/>。</param>
+    /// <returns>可重复使用、线程安全的抖动器。</returns>
+    /// <exception cref="ArgumentOutOfRangeException">强度不是有限数。</exception>
+    public static OrderedDitherer FromMatrix(OrderedMatrix matrix, float strength = 1f)
+    {
+        ArgumentNullException.ThrowIfNull(matrix);
+        return FromThresholds(matrix.Values.AsSpan(), matrix.Width, matrix.Height, matrix.Max, strength);
+    }
+
+    /// <summary>
     /// 由阈值矩阵创建有序抖动器。
     /// </summary>
     /// <param name="matrix">阈值矩阵，行优先，元素取值应在 0 到 <paramref name="max"/> - 1 之间。</param>
@@ -42,11 +55,17 @@ public sealed class OrderedDitherer : IDitherer
     /// <param name="height">矩阵高度。</param>
     /// <param name="max">阈值的除数。通常是格数；对角矩阵里有重复值，则是最大值加 1。</param>
     /// <param name="strength">抖动强度，含义同 <see cref="Bayer"/>。</param>
-    internal static OrderedDitherer FromThresholds(int[] matrix, int width, int height, int max, float strength)
+    internal static OrderedDitherer FromThresholds(ReadOnlySpan<int> matrix, int width, int height, int max, float strength)
     {
         if (!float.IsFinite(strength))
         {
             throw new ArgumentOutOfRangeException(nameof(strength), strength, "抖动强度必须是有限数。");
+        }
+
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(max);
+        if (matrix.Length != (long)width * height)
+        {
+            throw new ArgumentException("阈值矩阵长度必须等于 宽 × 高。", nameof(matrix));
         }
 
         // 下面的浮点运算全部用 float，运算顺序也固定：didder 用 float32 计算，

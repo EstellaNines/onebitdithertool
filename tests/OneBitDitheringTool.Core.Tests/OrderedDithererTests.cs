@@ -118,26 +118,107 @@ public class OrderedDithererTests
         RgbaImage expected = DidderOracle.Run(Source, TestPipeline.BlackWhiteFlags(1.0), ["bayer", "3x5"]);
         RgbaImage actual = TestPipeline.Dither(OrderedDitherer.Bayer(3, 5), Source).ToRgba();
 
-        Assert.Equal(expected.Width, actual.Width);
-        int differing = 0;
-        for (int y = 0; y < actual.Height; y++)
-        {
-            for (int x = 0; x < actual.Width; x++)
-            {
-                int o = ((y * actual.Width) + x) * 4;
-                if (expected.Pixels[o] == actual.Pixels[o])
-                {
-                    continue;
-                }
+        ImageAssert.EqualExceptKnownDifferences(
+            expected, actual, "bayer 3x5", (x, y) => x % 3 == 2 && y % 5 == 0, requireAtLeastOne: true);
+    }
 
-                Assert.True(x % 3 == 2 && y % 5 == 0, $"在笔误格之外出现差异：({x},{y})");
-                differing++;
+    /// <summary>
+    /// 全部 15 张内置矩阵在强度 1 下的对照，另选几张在其他强度下再测。
+    /// </summary>
+    public static TheoryData<string, double> OrderedMatrixCases
+    {
+        get
+        {
+            var data = new TheoryData<string, double>();
+            foreach (OrderedMatrix matrix in OrderedMatrices.All)
+            {
+                data.Add(matrix.Name, 1.0);
+            }
+
+            data.Add("ClusteredDot4x4", 0.5);
+            data.Add("ClusteredDotDiagonal8x8", -0.8);
+            data.Add("ClusteredDot8x8", 0.3);
+            data.Add("ClusteredDotSpiral5x5", -1.0);
+            return data;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(OrderedMatrixCases))]
+    public void OrderedMatrix_MatchesDidder(string name, double strength)
+    {
+        Assert.SkipUnless(DidderOracle.IsAvailable, DidderOracle.SkipReason);
+
+        RgbaImage expected = DidderOracle.Run(Source, TestPipeline.BlackWhiteFlags(strength), ["odm", name]);
+        RgbaImage actual = TestPipeline.Dither(OrderedDitherer.FromMatrix(OrderedMatrices.Get(name), (float)strength), Source).ToRgba();
+
+        // 两张矩阵修正过上游的笔误，允许在被修正的格子上与 didder 不同，别处必须一致
+        Func<int, int, bool> knownDifference = name switch
+        {
+            "ClusteredDotDiagonal6x6" => KnownDifference6x6,
+            "ClusteredDotDiagonal16x16" => KnownDifference16x16,
+            _ => (_, _) => false,
+        };
+        ImageAssert.EqualExceptKnownDifferences(expected, actual, $"odm {name} 强度={strength}", knownDifference, requireAtLeastOne: false);
+    }
+
+    [Fact]
+    public void Diagonal6x6_FixedTypoCell_ShowsUpOnlyThere()
+    {
+        Assert.SkipUnless(DidderOracle.IsAvailable, DidderOracle.SkipReason);
+
+        // 修正格的阈值由 8 变为 7，只在线性亮度处于 [32768, 36409) 的像素上才会改变黑白；
+        // 取 sRGB 190（线性约 33745）的纯色图，每个矩阵格都会遇到这个亮度
+        RgbaImage solid = TestImages.Solid(48, 48, 190);
+
+        RgbaImage expected = DidderOracle.Run(solid, TestPipeline.BlackWhiteFlags(1.0), ["odm", "ClusteredDotDiagonal6x6"]);
+        RgbaImage actual = TestPipeline.Dither(OrderedDitherer.FromMatrix(OrderedMatrices.Get("ClusteredDotDiagonal6x6")), solid).ToRgba();
+
+        ImageAssert.EqualExceptKnownDifferences(expected, actual, "odm ClusteredDotDiagonal6x6 纯灰 190", KnownDifference6x6, requireAtLeastOne: true);
+    }
+
+    [Theory]
+    [InlineData(150)]
+    [InlineData(151)]
+    public void Diagonal16x16_FixedTypoCells_ShowUpOnlyThere(byte gray)
+    {
+        Assert.SkipUnless(DidderOracle.IsAvailable, DidderOracle.SkipReason);
+
+        // 修正格的阈值由 87 变为 88，只在线性亮度处于 [19969, 20481) 的像素上才会改变黑白，
+        // 对应 sRGB 150 与 151；纯色图让每个矩阵格都遇到这个亮度
+        RgbaImage solid = TestImages.Solid(48, 48, gray);
+
+        RgbaImage expected = DidderOracle.Run(solid, TestPipeline.BlackWhiteFlags(1.0), ["odm", "ClusteredDotDiagonal16x16"]);
+        RgbaImage actual = TestPipeline.Dither(OrderedDitherer.FromMatrix(OrderedMatrices.Get("ClusteredDotDiagonal16x16")), solid).ToRgba();
+
+        ImageAssert.EqualExceptKnownDifferences(expected, actual, $"odm ClusteredDotDiagonal16x16 纯灰 {gray}", KnownDifference16x16, requireAtLeastOne: true);
+    }
+
+    [Theory]
+    [InlineData(1.0)]
+    [InlineData(-1.0)]
+    public void OrderedMatrices_SolidBlackAndWhite_StayUnchanged(double strength)
+    {
+        // 与 Bayer 同理：无论哪张矩阵，纯黑都不该抖出白点，纯白都不该抖出黑点
+        foreach (OrderedMatrix matrix in OrderedMatrices.All)
+        {
+            foreach (byte value in new byte[] { 0, 255 })
+            {
+                RgbaImage solid = TestImages.Solid(70, 70, value);
+                OneBitImage actual = TestPipeline.Dither(OrderedDitherer.FromMatrix(matrix, (float)strength), solid);
+
+                byte expectedLevel = value == 0 ? (byte)0 : (byte)1;
+                Assert.True(actual.Levels.All(l => l == expectedLevel), $"{matrix.Name} 强度={strength}：纯色 {value} 出现了相反颜色的像素");
             }
         }
-
-        // 若一处差异都没有，说明 didder 已修正该笔误，本测试和对应的偏差说明就该删除
-        Assert.True(differing > 0, "与 didder 完全一致：上游似乎已修复 3×5 矩阵，请更新测试与文档。");
     }
+
+    // 6×6 对角矩阵被修正的格子：第 3 行第 5 列
+    private static bool KnownDifference6x6(int x, int y) => x % 6 == 5 && y % 6 == 3;
+
+    // 16×16 对角矩阵被修正的两个格子：第 3 行第 8 列，及其镜像（第 11 行第 0 列）
+    private static bool KnownDifference16x16(int x, int y) =>
+        (x % 16 == 8 && y % 16 == 3) || (x % 16 == 0 && y % 16 == 11);
 
     [Fact]
     public void Bayer_ZeroStrength_IsAHardThresholdAtLinearHalf()
