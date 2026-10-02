@@ -46,6 +46,9 @@ public partial class MainWindow : Window
 
         Closed += (_, _) =>
         {
+            // 窗口关闭时取消还在进行的批量保存，免得后台线程继续写文件
+            _closing.Cancel();
+            _closing.Dispose();
             _coordinator.Dispose();
             _resultBitmap?.Dispose();
             _originalBitmap?.Dispose();

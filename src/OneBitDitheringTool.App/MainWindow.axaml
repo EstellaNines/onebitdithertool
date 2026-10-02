@@ -51,6 +51,13 @@
       <DockPanel LastChildFill="True">
         <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,8,0,0">
           <CheckBox Name="ShowOriginalCheckBox" Content="Show Original" />
+          <Button Name="SaveAllButton"
+                  Content="Save All To Output Folder"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Height="50"
+                  IsEnabled="False"
+                  Click="OnSaveAllClick" />
           <TextBlock Name="StatusText" TextWrapping="Wrap" Opacity="0.8" />
         </StackPanel>
 

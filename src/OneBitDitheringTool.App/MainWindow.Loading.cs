@@ -50,6 +50,7 @@ public partial class MainWindow
         _index = 0;
         _centerOnNextResult = true;
         UpdateNavigationButtons();
+        UpdateSaveButton();
         _loadTask = LoadCurrentAsync();
         return _loadTask;
     }

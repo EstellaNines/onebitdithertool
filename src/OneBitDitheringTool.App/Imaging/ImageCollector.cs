@@ -5,10 +5,6 @@ namespace OneBitDitheringTool.App.Imaging;
 /// </summary>
 public static class ImageCollector
 {
-    // Windows 与 macOS 的文件系统默认不区分大小写，同一张图换个大小写写法的路径应视为重复；Linux 则区分
-    private static readonly StringComparer PathComparer =
-        OperatingSystem.IsWindows() || OperatingSystem.IsMacOS() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-
     /// <summary>
     /// 收集图片：文件夹展开为其中（不含子文件夹）受支持的图片，文件则直接收入；其余一律忽略。
     /// </summary>
@@ -23,7 +19,7 @@ public static class ImageCollector
         ArgumentNullException.ThrowIfNull(paths);
 
         var result = new List<string>();
-        var seen = new HashSet<string>(PathComparer);
+        var seen = new HashSet<string>(PathNames.Comparer);
 
         foreach (string path in paths)
         {
