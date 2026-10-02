@@ -1,0 +1,84 @@
+OneBitDitheringTool 第三方来源与协议声明
+=========================================
+
+本仓库是对 timheigames/onebitdithertool 的重写，算法行为参照 didder。以下逐项说明各来源与对应的协议义务。
+
+
+1. OneBitDitherTool（timheigames）—— MIT
+   https://github.com/timheigames/onebitdithertool
+
+   本项目的功能集、界面布局与操作习惯源自该项目；上游的 Lua 代码已全部移除（保留在 git 历史中），
+   当前仓库的 C# 代码不包含其源码。仓库根目录的 LICENSE 即该项目的 MIT 协议，予以保留：
+
+     Copyright (c) 2022 timhei
+
+
+2. didder —— GPL-3.0
+   https://github.com/makew0rld/didder
+
+   仅作为行为参照与测试用的黑盒参照机：测试以独立进程调用用户自行构建的 didder 可执行文件
+   （环境变量 DIDDER_PATH），不复制、不链接其代码，也不随本仓库分发其任何文件。
+   本项目的抖动算法按公开的算法定义自行实现，并以 didder 的输出做逐像素验证。
+
+
+3. dither —— MPL-2.0
+   https://github.com/makew0rld/dither
+
+   【需要注意的文件】src/OneBitDitheringTool.Core/OrderedMatrices.cs
+   该文件中的 15 张聚点矩阵数据取自 dither 的 ordered_ditherers.go（提交 6055917），转写为 C# 并修正了三处笔误，
+   因此该文件按 Mozilla Public License 2.0 提供，文件头已附 MPL-2.0 声明，其源码即在本仓库中。
+   协议全文：https://www.mozilla.org/MPL/2.0/
+
+   仓库中的其余文件不受 MPL-2.0 约束。其他算法（Bayer 矩阵生成、误差扩散核、随机噪声、sRGB 线性化）
+   均按公开的算法定义自行实现，没有转写 dither 的代码；但这些实现与 dither 的行为逐像素一致，
+   并且实现者阅读过 dither 的源码，不能视为严格意义上的「洁净室」实现。若将来要商业发行，请先自行复核。
+
+   这些矩阵的数值最初来自：
+   - Robert Ulichney，《Digital Halftoning》，MIT Press，1987（图 5.4、5.9、5.13）
+   - Daniel L. Lau 与 Gonzalo R. Arce，《Modern Digital Halftoning》，第 2 版（图 1.5）
+   - libcaca 研究文第二部分：http://caca.zoy.org/study/part2.html
+   - https://archive.is/71e9G
+
+
+4. imaging —— MIT
+   https://github.com/disintegration/imaging
+
+   Box 缩放、灰度化、对比度与亮度的公式与取整方式，参照该库 v1.6.2 的行为重新实现（src/OneBitDitheringTool.Core/Preprocessor.cs），
+   以保证与 didder 逐像素一致。按其 MIT 协议，在此保留版权与许可声明：
+
+     The MIT License (MIT)
+
+     Copyright (c) 2012 Grigory Dryapak
+
+     Permission is hereby granted, free of charge, to any person obtaining a copy
+     of this software and associated documentation files (the "Software"), to deal
+     in the Software without restriction, including without limitation the rights
+     to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+     copies of the Software, and to permit persons to whom the Software is
+     furnished to do so, subject to the following conditions:
+
+     The above copyright notice and this permission notice shall be included in all
+     copies or substantial portions of the Software.
+
+     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+     AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+     SOFTWARE.
+
+
+5. 公开的算法资料
+
+   - Bayer 阈值矩阵的位运算生成算法：Bisqwit，《Joel Yliluoma's arbitrary-palette positional dithering algorithm》附录 2，
+     https://bisqwit.iki.fi/story/howto/dither/jy/ ；其中 3×3 与 5×3 为 Joel Yliluoma 手工设计的矩阵
+   - 误差扩散核的系数为公开的标准定义（Floyd–Steinberg、Jarvis–Judice–Ninke、Stucki、Burkes、Sierra、Atkinson 等）；
+     Steven Pigeon 核出自 https://hbfs.wordpress.com/2013/12/31/dithering/
+
+
+6. 运行时依赖（均通过 NuGet 引用，各自的协议随包提供）
+
+   - Avalonia 12（MIT）—— 界面框架
+   - SkiaSharp（MIT）—— 图片解码
+   - 测试：xunit v3（Apache-2.0）、Avalonia.Headless.XUnit（MIT）

@@ -1,56 +1,92 @@
-# OneBitDitherTool
-A 1-bit dithering tool written in [Love2D](https://love2d.org/). It currently supports Windows, Linux and macOS. This tool relies on the command line dithering tool [didder](https://github.com/makeworld-the-better-one/didder), command line image editor [ImageMagick](https://imagemagick.org/index.php), as well as the Lua libraries [Slab](https://github.com/flamendless/Slab) and [nativeFS](https://github.com/EngineerSmith/nativefs).
+# OneBitDitheringTool
 
-![UI_example_image](https://user-images.githubusercontent.com/102014001/165626507-634bcc2a-2d00-4f4f-925f-5c749f3a3a26.png)
+把任意图片转换成 1-bit（纯黑白）抖动图的桌面工具。基于 .NET 10 与跨平台界面框架 Avalonia 12，**无需另装 didder、ImageMagick 或 LÖVE**。目标平台是 Windows、macOS 与 Linux，但目前只在 Windows 11 上验证过，其余两个平台尚未实测。
 
-## Features
-- Supports all dithering algorithms provided by didder:
-  - Bayer dithering
-    - 2x2, 3x3, 3x5, 5x3, 4x4, 8x8, 16x16, 32x32, 64x64, custom size
-  - Ordered dithering
-    - Vertical5x3, Horizontal3x5, ClusteredDotVerticalLine, ClusteredDotHorizontalLine, ClusteredDot4x4, ClusteredDotSpiral5x5, ClusteredDot6x6, ClusteredDotDiagonal6x6, ClusteredDot8x8, ClusteredDotDiagonal8x8, ClusteredDotDiagonal16x16
-  - Error diffusion dithering
-    - Simple2D, FloydSteinberg, FalseFloydSteinberg, JarvisJudiceNinke, Atkinson, Stucki, Burkes, Sierra, TwoRowSierra, SierraLite, StevenPigeon
-  - Random noise dithering
-- Fine control over dither strength, image brightness, and image contrast with real-time updates in the preview window.
-- Modify RGB channel multipliers before image is converted to grayscale.
-- Multiple ways to open files. You can drag a single image into the window, drag a folder into the window to load multiple images, or use a file browser to open one or more images (select multiple with ctrl or shift click).
-- Dither many images at the same time, with the same settings.
-- Resize the image before dithering is applied.
-- A toggle button to show the original image for making comparisons.
+本项目由 [timheigames/onebitdithertool](https://github.com/timheigames/onebitdithertool)（Lua / LÖVE，调用 didder 与 ImageMagick 命令行）重写而来，功能与操作习惯与原版对齐；抖动算法按 [didder](https://github.com/makew0rld/didder) 的行为实现，并用它的输出做逐像素验证。
 
-## How to use
-- Download and extract OneBitDitherTool from the [Releases](https://github.com/timheigames/onebitdithertool/releases) section.
-- Run the app by using `Run_OneBitDitherTool_Windows.bat`, `Run_OneBitDitherTool_Linux.sh` or `Run_OneBitDitherTool_macOS.sh`. For macOS, you must install the prerequisites [below](https://github.com/timheigames/onebitdithertool/edit/main/README.md#macos-prerequisites).
-- You can drag a single image into the window, drag a folder into the window, or use the file browser. (.png, .jpg, .jpeg are supported)
-  - Dragging a folder will scan through the folder and find all .png, .jpg, and .jpeg files. Any other files will be ignored.
-  - While using the file browser, you can select multiple files using CTRL+Click or SHIFT+Click. You must click "OK" to load the files, double clicking does not work.
-- If you have loaded multiple images, you can change the preview image with Left Arrow and Right Arrow.
-- You can use left mouse to click and drag the image around. Mouse wheel will zoom the image at integer scales.
-- You can resize the image before dithering is applied with the scale slider.
-- By enabling "Split Channels", you can modify the RGB multipliers for the grayscale image. Note: This option will slow down performance in some cases.
-- Adjust Strength, Brightness, and Contrast sliders with the mouse. Clicking the name of the slider will reset to the default value.
-- Select a Dither Type in the drop down menu. Each dither type will have different settings available.
-- When you are happy with the results, click "Save All To Output Folder". This will iterate through all of the loaded images, apply the same dithering to each one, and then copy the images to the "output" folder in the OneBitDitherTool directory. Output images are always .png files.
+## 功能
 
+- **四类抖动算法**
+  - Bayer 矩阵：2×2、3×3、3×5、5×3、4×4、8×8、16×16、32×32、64×64，另可自定义宽高（2、4、8、16、32、64 任意组合）
+  - Ordered Dithering Matrix：15 种聚点矩阵（ClusteredDot4x4、ClusteredDotDiagonal8x8、Vertical5x3 等）
+  - Error Diffusion Matrix：Simple2D、FloydSteinberg、FalseFloydSteinberg、JarvisJudiceNinke、Atkinson、Stucki、Burkes、Sierra、TwoRowSierra、SierraLite、StevenPigeon，可选蛇形扫描
+  - Random：随机噪声，可调噪声范围
+- **实时预览**：拖动滑杆即刻重算；Strength、Brightness、Contrast 三个滑杆，Scale 可在抖动前先缩小图片
+- **Split Channels**：抖动前先自定义 R、G、B 的灰度权重
+- **批量处理**：一次载入多张图片或整个文件夹，用同一套参数批量输出
+- **预览操作**：左键拖动平移，滚轮整数倍缩放（以指针为中心），`Show Original` 对比原图，左右方向键切换图片
+- **真 1-bit 输出**：不含透明度的图保存为 1 位深的索引 PNG；含透明度的图保存为 8 位 RGBA PNG（1 位深表达不了半透明）
 
-## macOS prerequisites
-The app requires `lua`, the love2d framework and the `didder` app. Those are easily installed via [homebrew](https://brew.sh).
+## 运行
 
-- Open a terminal window and install homebrew by typing `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`.
-- Install `lua` by typing `brew install lua`.
-- Install the love2d framework by typing `brew install love`.
-- Add a cask for the developer of `didder` by typing `brew tap makeworld-the-better-one/tap`.
-- Install the `didder` command line tool by typing `brew install didder`.
+需要 [.NET 10 SDK](https://dotnet.microsoft.com/download)。
 
-If you wish to use split RGB channel tweaking, you will also need `imageMagick`:
+```
+dotnet run --project src/OneBitDitheringTool.App
+```
 
-- Install the imageMagick command line tool by typing `brew install imagemagick`.
+## 使用
 
-Unfortunately the love2d framework is not code-signed correctly so if you have the standard security settings, you will need to tell macOS to ignore that when using it.
+1. 点击 `Open Image(s)...`（可多选），或把图片、文件夹直接拖进窗口。支持 `.png`、`.jpg`、`.jpeg`。拖入文件夹时只扫描第一层，按文件名排序。
+2. 调整右侧参数，预览随之更新。点击滑杆的名称可复位为默认值。
+3. 载入多张图片后，用工具栏的 `<` `>` 按钮或键盘左右方向键切换。方向键在滑杆或下拉框获得焦点时归它们使用，点一下预览区即可把焦点还给窗口。
+4. 点击 `Save All To Output Folder` 选择输出文件夹，所有图片按同一套参数处理并保存为 `原文件名.png`。
 
-- Go to `Applications`, right click on `Love` then select Open.
-- You will get a notification that the app is from an unidentified developer, click Ok and close the `Love` app.
-- In the finder menu open click on Go->Open Folder and type `/opt/homebrew/bin/`
-- Right click on `love` then select Open.
-- You will get a notification that the app is from an unidentified developer, click Ok.
+保存时的命名规则：**绝不覆盖任何输入图片**。若输出文件夹就是原图所在的文件夹，同名文件会自动改名为 `名称 (2).png`；同一批里重名的图片也是如此。其余已存在的同名文件会被覆盖，因此重新导出时能刷新上一次的结果。
+
+## 与原版及 didder 的差异
+
+算法行为与 didder 一致，下列各处是**有意的偏离**：
+
+| 项目 | 原版 / didder | 本工具 |
+|---|---|---|
+| Strength 为 0 | didder 把 0 当成「未设置」而按 1 处理 | 按数学含义处理：0 即不抖动，以线性亮度 0.5 为界的硬阈值 |
+| Burkes 核 | 原版 Windows 包内置的旧版 dither 系数有误（首行为 8/32、8/32） | 采用修正后的系数（8/32、4/32），与新版 didder 一致 |
+| Random 抖动 | 每次以时间为种子，预览与保存的结果不同 | 固定种子，预览与保存完全一致 |
+| Bayer 3×5 | dither 库的 3×5 矩阵首行写作 `{0, 14, 16}`，16 超出 0 到 14 的取值范围，应是 6 的笔误 | 采用 5×3 矩阵的转置 `{0, 14, 6}` |
+| ClusteredDotDiagonal6x6 | 一个格子取 8，使 8 出现三次、7 只出现一次，破坏了对角矩阵的对称结构 | 该格改为 7 |
+| ClusteredDotDiagonal16x16 | 87 出现四次、88 缺失 | 两个镜像格改为 88（依数值规律推断，不像 6×6 那样由结构唯一确定） |
+| 输出格式 | 两色像素存成 24 位 RGB 或 32 位 RGBA 的 PNG | 无透明度时存真 1 位深索引 PNG |
+| Scale 取整 | 对宽度向下取整，浮点误差会少一个像素；取整为 0 时悄悄不缩放 | 抵消浮点误差，且至少保留 1 像素 |
+
+已知的局限：
+
+- **JPEG 输入无法保证与 didder 逐像素一致**：JPEG 解码器与 didder 所用的 Go 标准库实现不同，解码出的灰度可能差 1；PNG 输入可以逐像素一致。
+- **Split Channels 未与 ImageMagick 对照**：原版靠 ImageMagick 混色，本机无法对照，取整可能差一个灰度级。
+- 输出只有 PNG，输入只有 PNG、JPG。
+
+## 开发
+
+```
+src/OneBitDitheringTool.Core/    抖动算法与 PNG 编码，无界面依赖
+src/OneBitDitheringTool.App/     Avalonia 界面
+tests/OneBitDitheringTool.Core.Tests/    算法测试，含与 didder 的逐像素对照
+tests/OneBitDitheringTool.App.Tests/     界面测试（无头渲染）
+```
+
+处理流程：缩放（Box 滤波）→ 灰度化 → 对比度 → 亮度 → sRGB 转线性光 → 抖动 → 1-bit。抖动在线性光空间进行，所以中间调的白点占比等于它的线性亮度（sRGB 中灰 128 约占 22%），而不是直觉里的 50%。
+
+### 运行测试
+
+```
+dotnet test
+```
+
+界面测试用 Avalonia 的无头模式，无需显示器；它们会核对预览里显示的像素与 Core 算出的结果逐字节相同。
+
+与 didder 的逐像素对照需要一个 didder 可执行文件，它只作为黑盒参照机被调用，不随本仓库分发。未配置时，这部分测试会被自动跳过，其余测试照常运行：
+
+```
+git clone https://github.com/makew0rld/didder
+cd didder
+go build -o didder.exe .
+set DIDDER_PATH=C:\path\to\didder.exe        (Windows cmd)
+export DIDDER_PATH=/path/to/didder            (macOS / Linux，可执行文件名不带 .exe)
+dotnet test
+```
+
+随机抖动无法与 didder 逐像素对照（两边的随机数发生器不同），改用统计检验：白点占比与理论值相符，并与 didder 的白点占比比对。
+
+## 协议与致谢
+
+仓库根目录的 [LICENSE](LICENSE) 沿用上游项目的 MIT 协议。第三方来源、各自的协议，以及其中需要特别注意的一个文件（`OrderedMatrices.cs` 按 MPL-2.0 提供），见 [NOTICE](NOTICE)。
