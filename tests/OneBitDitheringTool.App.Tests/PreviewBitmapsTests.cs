@@ -46,20 +46,5 @@ public class PreviewBitmapsTests
         Assert.Equal(new Avalonia.PixelSize(7, 3), bitmap.PixelSize);
     }
 
-    /// <summary>
-    /// 读出位图的像素数据（BGRA，逐行紧凑排列，去掉每行末尾可能的对齐填充）。
-    /// </summary>
-    private static byte[] ReadBgra(WriteableBitmap bitmap)
-    {
-        using ILockedFramebuffer buffer = bitmap.Lock();
-        int width = bitmap.PixelSize.Width;
-        int height = bitmap.PixelSize.Height;
-        var result = new byte[width * height * 4];
-        for (int y = 0; y < height; y++)
-        {
-            Marshal.Copy(buffer.Address + (y * buffer.RowBytes), result, y * width * 4, width * 4);
-        }
-
-        return result;
-    }
+    private static byte[] ReadBgra(WriteableBitmap bitmap) => BitmapReader.ReadBgra(bitmap);
 }

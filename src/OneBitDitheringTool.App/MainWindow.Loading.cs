@@ -1,0 +1,201 @@
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
+using OneBitDitheringTool.App.Imaging;
+using OneBitDitheringTool.App.Rendering;
+using OneBitDitheringTool.Core;
+
+namespace OneBitDitheringTool.App;
+
+public partial class MainWindow
+{
+    private static readonly FilePickerFileType ImageFileType = new("Images (png, jpg, jpeg)")
+    {
+        Patterns = ["*.png", "*.jpg", "*.jpeg"],
+
+        // macOS 的文件对话框按类型标识而不是通配符过滤，缺了这两项会让所有图片都灰掉
+        AppleUniformTypeIdentifiers = ["public.png", "public.jpeg"],
+        MimeTypes = ["image/png", "image/jpeg"],
+    };
+
+    private List<string> _files = [];
+    private int _index;
+    private RgbaImage? _source;
+    private WriteableBitmap? _resultBitmap;
+
+    // 每次发起载入就加一。解码在后台线程进行，用户快速连续切图时多个解码会同时在途，
+    // 只有版本号仍是最新的那一个才有资格更新界面，否则旧图会晚到并覆盖新图
+    private int _loadVersion;
+    private Task _loadTask = Task.CompletedTask;
+
+    // 新载入一批图片后，第一张渲染结果出来时把它居中显示
+    private bool _centerOnNextResult;
+
+    /// <summary>
+    /// 载入一批图片并显示第一张。
+    /// </summary>
+    /// <param name="paths">图片文件路径，须为受支持的格式。</param>
+    /// <returns>表示载入（含随后发起的渲染请求）的任务。</returns>
+    internal Task LoadFilesAsync(IReadOnlyList<string> paths)
+    {
+        ArgumentNullException.ThrowIfNull(paths);
+        if (paths.Count == 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        _files = [.. paths];
+        _index = 0;
+        _centerOnNextResult = true;
+        _loadTask = LoadCurrentAsync();
+        return _loadTask;
+    }
+
+    /// <summary>
+    /// 等待载入与渲染全部完成。主要供测试使用。
+    /// </summary>
+    /// <returns>表示等待的任务。</returns>
+    internal async Task WhenIdleAsync()
+    {
+        // 载入完成时会发起渲染，所以先等载入，再等渲染
+        await _loadTask;
+        await _coordinator.WhenIdleAsync();
+    }
+
+    private async void OnOpenClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            IReadOnlyList<IStorageFile> picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "Open Image(s)",
+                AllowMultiple = true,
+                FileTypeFilter = [ImageFileType],
+            });
+
+            string[] paths = [.. picked.Select(file => file.TryGetLocalPath()).OfType<string>().Where(ImageDecoder.IsSupported)];
+            if (paths.Length > 0)
+            {
+                await LoadFilesAsync(paths);
+            }
+        }
+        catch (Exception exception)
+        {
+            // 这里是界面事件处理的最外层，不能让异常逃出去把程序崩掉：转成状态栏提示即可
+            SetStatus($"Open failed: {exception.Message}");
+        }
+    }
+
+    private async Task LoadCurrentAsync()
+    {
+        int version = ++_loadVersion;
+        string path = _files[_index];
+        SetStatus($"Loading {Path.GetFileName(path)}...");
+
+        RgbaImage image;
+        try
+        {
+            image = await Task.Run(() => ImageDecoder.Decode(path));
+        }
+        catch (Exception exception)
+        {
+            // 单张图片损坏、被占用或内存不足都不该让程序崩溃；这是该图片的失败，如实告知即可
+            if (version == _loadVersion)
+            {
+                ClearImage();
+                SetStatus($"Cannot open {Path.GetFileName(path)}: {exception.Message}");
+            }
+
+            return;
+        }
+
+        if (version != _loadVersion)
+        {
+            return;
+        }
+
+        _source = image;
+        UpdateInfoText();
+        RequestRender();
+    }
+
+    /// <summary>
+    /// 请求用当前控件的取值重新渲染预览；尚未载入图片时什么也不做。
+    /// </summary>
+    private void RequestRender()
+    {
+        if (_source is null)
+        {
+            return;
+        }
+
+        UpdateSizeText();
+        SetStatus("Rendering...");
+        _coordinator.Request(_source, ReadSettings());
+    }
+
+    private void OnRenderCompleted(RenderOutcome outcome)
+    {
+        // 渲染期间可能已经换了一张图，此时这份结果属于旧图，直接丢弃
+        if (!ReferenceEquals(outcome.Source, _source))
+        {
+            return;
+        }
+
+        if (outcome.Error is not null)
+        {
+            SetStatus($"Error: {outcome.Error.Message}");
+            return;
+        }
+
+        ShowResult(outcome.Result!);
+        SetStatus($"Done in {outcome.Elapsed.TotalMilliseconds:0} ms");
+    }
+
+    private void ShowResult(OneBitImage result)
+    {
+        WriteableBitmap bitmap = PreviewBitmaps.FromOneBit(result);
+
+        // 先让界面换上新位图，再释放旧的：界面还在引用旧位图时释放它，下一次绘制会出错
+        ReplacePreview(bitmap);
+        _resultBitmap?.Dispose();
+        _resultBitmap = bitmap;
+    }
+
+    private void ClearImage()
+    {
+        _source = null;
+        PreviewImage.Source = null;
+        _resultBitmap?.Dispose();
+        _resultBitmap = null;
+        EmptyHint.IsVisible = true;
+        ImageCountText.Text = $"Image {_index + 1} of {_files.Count}";
+        FileNameText.Text = string.Empty;
+        SizeText.Text = string.Empty;
+    }
+
+    private void UpdateInfoText()
+    {
+        string name = Path.GetFileName(_files[_index]);
+        ImageCountText.Text = $"Image {_index + 1} of {_files.Count}";
+        FileNameText.Text = name;
+        Title = $"OneBitDitheringTool - {name}";
+        UpdateSizeText();
+    }
+
+    private void UpdateSizeText()
+    {
+        if (_source is null)
+        {
+            SizeText.Text = string.Empty;
+            return;
+        }
+
+        // 显示处理之后的尺寸（含缩放比例），与实际产出完全一致，换算规则在 ToolSettings 中统一维护
+        (int width, int height) = ReadSettings().GetOutputSize(_source.Width, _source.Height);
+        SizeText.Text = $"Size: ({width}x{height})";
+    }
+
+    private void SetStatus(string text) => StatusText.Text = text;
+}

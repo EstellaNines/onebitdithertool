@@ -1,0 +1,31 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="OneBitDitheringTool.App.Controls.ParameterSlider">
+  <StackPanel Spacing="2">
+    <Grid ColumnDefinitions="*,Auto">
+      <!-- 点击名称即复位为默认值，与原版的操作习惯一致 -->
+      <!-- Fluent 主题的按钮默认最小高度为 32，会把每个滑杆撑得很高；这里压到与文字等高 -->
+      <Button Name="ResetButton"
+              Padding="0"
+              MinHeight="0"
+              Height="22"
+              Background="Transparent"
+              BorderThickness="0"
+              HorizontalAlignment="Left"
+              Click="OnResetClick"
+              ToolTip.Tip="Click to reset to the default value" />
+      <TextBlock Name="ValueText"
+                 Grid.Column="1"
+                 VerticalAlignment="Center"
+                 Opacity="0.8" />
+    </Grid>
+    <!-- 步长固定为 0.01：与原版滑杆的精度一致，也避免 0.30000000000000004 之类的浮点尾数 -->
+    <!-- Fluent 主题的滑杆模板自带上下留白，默认高达 50。直接压低高度会把滑块裁掉一半，
+         所以保持模板高度不变，用负外边距让上下行互相让出空白，一屏能放下更多参数 -->
+    <Slider Name="Slider"
+            Margin="0,-9"
+            TickFrequency="0.01"
+            IsSnapToTickEnabled="True"
+            ValueChanged="OnSliderValueChanged" />
+  </StackPanel>
+</UserControl>
