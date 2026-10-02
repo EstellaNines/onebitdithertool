@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OneBitDitheringTool.Core/OneBitDitheringTool.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OneBitDitheringTool.Core.Tests/OneBitDitheringTool.Core.Tests.csproj" />
+  </Folder>
+</Solution>

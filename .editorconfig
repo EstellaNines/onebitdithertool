@@ -1,0 +1,25 @@
+# 顶层配置：仓库内所有文件统一遵循此处约定
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{csproj,props,targets,slnx,xml,axaml,json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+# Markdown 行尾两个空格带有换行语义，不能自动去除
+trim_trailing_whitespace = false
+
+[*.cs]
+csharp_style_namespace_declarations = file_scoped:warning
+# 仅在类型显而易见时使用 var（见 C# 编码规范分卷）
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+dotnet_sort_system_directives_first = true

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>OneBitDitheringTool.Core</RootNamespace>
+    <!-- 公开 API 必须带 XML 文档；缺失时由编译器给出 CS1591 警告 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+</Project>

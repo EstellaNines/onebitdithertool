@@ -1,0 +1,11 @@
+<Project>
+  <!-- 全部项目共用的编译设置 -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <!-- 让 .editorconfig 中的代码风格规则在编译期也生效，而不只是 IDE 提示 -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+</Project>

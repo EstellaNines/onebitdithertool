@@ -1,0 +1,6 @@
+# 统一以 LF 存储并检出：本机 core.autocrlf=true 会让工作区变成 CRLF，
+# 与 .editorconfig 的 end_of_line = lf 冲突，导致 dotnet format 校验出现噪声。
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
