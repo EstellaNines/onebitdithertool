@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# 发布产物：dotnet publish 的输出目录。单文件 exe 约 100 MB，不应入库；导出方法见 README
+/dist/

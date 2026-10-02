@@ -25,6 +25,22 @@
 dotnet run --project src/OneBitDitheringTool.App
 ```
 
+## 发布（导出独立 exe）
+
+下面的命令导出一个**自带 .NET 运行时的单文件 exe**（Windows x64），目标机器无需安装 .NET：
+
+```
+dotnet publish src/OneBitDitheringTool.App -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -p:DebugSymbols=false -p:PublishReferencesDocumentationFiles=false -p:AllowedReferenceRelatedFileExtensions=.allowedextension -o dist
+```
+
+产物是 `dist/OneBitDitheringTool.exe`，约 100 MB（其中大部分是运行时）。几点说明：
+
+- 发布后 `dist/` 里还会多出 `libSkiaSharp.pdb`、`libHarfBuzzSharp.pdb` 两个原生库的调试符号（合计约 100 MB），运行用不到，可以直接删除。
+- 首次启动会把原生库解压到临时目录，所以第一次会慢一两秒。
+- 该 exe 没有代码签名，在别的电脑上首次运行时，Windows SmartScreen 可能提示「未知发布者」。
+- 其他平台把 `win-x64` 换成 `osx-arm64`、`linux-x64` 等同理，但尚未实测。
+- 没有启用裁剪（`PublishTrimmed`）：Avalonia 依赖反射，裁剪容易引出只在运行时才出现的问题。
+
 ## 使用
 
 1. 点击 `Open Image(s)...`（可多选），或把图片、文件夹直接拖进窗口。支持 `.png`、`.jpg`、`.jpeg`。拖入文件夹时只扫描第一层，按文件名排序。
