@@ -6,4 +6,9 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- 预处理的中间步骤保持 internal，只在测试中单独验证，避免扩大公开 API -->
+    <InternalsVisibleTo Include="OneBitDitheringTool.Core.Tests" />
+  </ItemGroup>
+
 </Project>
