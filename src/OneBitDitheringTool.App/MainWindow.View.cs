@@ -138,7 +138,7 @@ public partial class MainWindow
 
         PreviewImage.Width = bitmap.PixelSize.Width * zoom;
         PreviewImage.Height = bitmap.PixelSize.Height * zoom;
-        ZoomText.Text = $"Zoom: {zoom}x";
+        ZoomText.Text = $"预览放大：{zoom}×";
         ApplyView();
     }
 

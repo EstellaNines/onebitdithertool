@@ -11,7 +11,7 @@ namespace OneBitDitheringTool.App;
 
 public partial class MainWindow
 {
-    private static readonly FilePickerFileType ImageFileType = new("Images (png, jpg, jpeg)")
+    private static readonly FilePickerFileType ImageFileType = new("图片（png、jpg、jpeg）")
     {
         Patterns = ["*.png", "*.jpg", "*.jpeg"],
 
@@ -65,7 +65,7 @@ public partial class MainWindow
         List<string> images = ImageCollector.Collect(paths);
         if (images.Count == 0)
         {
-            SetStatus("No supported images (png, jpg, jpeg) were dropped.");
+            SetStatus("拖入的内容里没有受支持的图片（png、jpg、jpeg）。");
             return;
         }
 
@@ -89,7 +89,7 @@ public partial class MainWindow
         {
             IReadOnlyList<IStorageFile> picked = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                Title = "Open Image(s)",
+                Title = "打开图片",
                 AllowMultiple = true,
                 FileTypeFilter = [ImageFileType],
             });
@@ -103,7 +103,7 @@ public partial class MainWindow
         catch (Exception exception)
         {
             // 这里是界面事件处理的最外层，不能让异常逃出去把程序崩掉：转成状态栏提示即可
-            SetStatus($"Open failed: {exception.Message}");
+            SetStatus($"打开失败：{exception.Message}");
         }
     }
 
@@ -124,7 +124,7 @@ public partial class MainWindow
         }
         catch (Exception exception)
         {
-            SetStatus($"Drop failed: {exception.Message}");
+            SetStatus($"拖入失败：{exception.Message}");
         }
     }
 
@@ -173,7 +173,7 @@ public partial class MainWindow
     {
         int version = ++_loadVersion;
         string path = _files[_index];
-        SetStatus($"Loading {Path.GetFileName(path)}...");
+        SetStatus($"正在载入 {Path.GetFileName(path)}…");
 
         RgbaImage image;
         try
@@ -186,7 +186,7 @@ public partial class MainWindow
             if (version == _loadVersion)
             {
                 ClearImage();
-                SetStatus($"Cannot open {Path.GetFileName(path)}: {exception.Message}");
+                SetStatus($"无法打开 {Path.GetFileName(path)}：{exception.Message}");
             }
 
             return;
@@ -214,7 +214,7 @@ public partial class MainWindow
         }
 
         UpdateSizeText();
-        SetStatus("Rendering...");
+        SetStatus("正在渲染…");
         _coordinator.Request(_source, ReadSettings());
     }
 
@@ -228,12 +228,12 @@ public partial class MainWindow
 
         if (outcome.Error is not null)
         {
-            SetStatus($"Error: {outcome.Error.Message}");
+            SetStatus($"出错：{outcome.Error.Message}");
             return;
         }
 
         ShowResult(outcome.Result!);
-        SetStatus($"Done in {outcome.Elapsed.TotalMilliseconds:0} ms");
+        SetStatus($"完成，用时 {outcome.Elapsed.TotalMilliseconds:0} 毫秒");
     }
 
     private void ShowResult(OneBitImage result)
@@ -256,7 +256,7 @@ public partial class MainWindow
         _originalBitmap?.Dispose();
         _originalBitmap = null;
         EmptyHint.IsVisible = true;
-        ImageCountText.Text = $"Image {_index + 1} of {_files.Count}";
+        ImageCountText.Text = ImageCountLabel();
         FileNameText.Text = string.Empty;
         SizeText.Text = string.Empty;
     }
@@ -264,11 +264,13 @@ public partial class MainWindow
     private void UpdateInfoText()
     {
         string name = Path.GetFileName(_files[_index]);
-        ImageCountText.Text = $"Image {_index + 1} of {_files.Count}";
+        ImageCountText.Text = ImageCountLabel();
         FileNameText.Text = name;
         Title = $"OneBitDitheringTool - {name}";
         UpdateSizeText();
     }
+
+    private string ImageCountLabel() => $"第 {_index + 1} 张 / 共 {_files.Count} 张";
 
     private void UpdateNavigationButtons() => PreviousButton.IsEnabled = NextButton.IsEnabled = _files.Count > 1;
 
@@ -282,7 +284,7 @@ public partial class MainWindow
 
         // 显示处理之后的尺寸（含缩放比例），与实际产出完全一致，换算规则在 ToolSettings 中统一维护
         (int width, int height) = ReadSettings().GetOutputSize(_source.Width, _source.Height);
-        SizeText.Text = $"Size: ({width}x{height})";
+        SizeText.Text = $"尺寸：{width}×{height}";
     }
 
     private void SetStatus(string text) => StatusText.Text = text;

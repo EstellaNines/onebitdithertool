@@ -28,10 +28,10 @@ public class MainWindowTests
             Assert.Equal(255, bgra[i + 3]);
         }
 
-        Assert.Equal("Image 1 of 1", Find<TextBlock>(window, "ImageCountText").Text);
+        Assert.Equal("第 1 张 / 共 1 张", Find<TextBlock>(window, "ImageCountText").Text);
         Assert.Equal("sample.png", Find<TextBlock>(window, "FileNameText").Text);
-        Assert.Equal("Size: (64x48)", Find<TextBlock>(window, "SizeText").Text);
-        Assert.StartsWith("Done", Find<TextBlock>(window, "StatusText").Text);
+        Assert.Equal("尺寸：64×48", Find<TextBlock>(window, "SizeText").Text);
+        Assert.StartsWith("完成", Find<TextBlock>(window, "StatusText").Text);
         Assert.False(Find<StackPanel>(window, "EmptyHint").IsVisible);
         Assert.Equal("OneBitDitheringTool - sample.png", window.Title);
 
@@ -86,7 +86,7 @@ public class MainWindowTests
         await window.WhenIdleAsync();
 
         Assert.Equal(new PixelSize(50, 30), Preview(window).PixelSize);
-        Assert.Equal("Size: (50x30)", Find<TextBlock>(window, "SizeText").Text);
+        Assert.Equal("尺寸：50×30", Find<TextBlock>(window, "SizeText").Text);
 
         window.Close();
     }
@@ -245,7 +245,7 @@ public class MainWindowTests
 
             MainWindow window = await OpenAsync(path);
 
-            Assert.StartsWith("Cannot open broken.png", Find<TextBlock>(window, "StatusText").Text);
+            Assert.StartsWith("无法打开 broken.png", Find<TextBlock>(window, "StatusText").Text);
             Assert.True(Find<StackPanel>(window, "EmptyHint").IsVisible);
             Assert.Null(Find<Image>(window, "PreviewImage").Source);
 

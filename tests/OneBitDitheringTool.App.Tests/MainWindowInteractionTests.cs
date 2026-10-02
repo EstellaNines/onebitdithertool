@@ -20,29 +20,29 @@ public class MainWindowInteractionTests
         using var b = new TempImageFile(SampleImages.Noisy(50, 20), "b.png");
         using var c = new TempImageFile(SampleImages.Noisy(60, 10), "c.png");
         MainWindow window = await OpenAsync(a.Path, b.Path, c.Path);
-        AssertShowing(window, "Image 1 of 3", "a.png", new PixelSize(40, 30));
+        AssertShowing(window, "第 1 张 / 共 3 张", "a.png", new PixelSize(40, 30));
 
         Click(window, "NextButton");
         await window.WhenIdleAsync();
-        AssertShowing(window, "Image 2 of 3", "b.png", new PixelSize(50, 20));
+        AssertShowing(window, "第 2 张 / 共 3 张", "b.png", new PixelSize(50, 20));
 
         window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
         await window.WhenIdleAsync();
-        AssertShowing(window, "Image 3 of 3", "c.png", new PixelSize(60, 10));
+        AssertShowing(window, "第 3 张 / 共 3 张", "c.png", new PixelSize(60, 10));
 
         // 到尾部后再往后：回到第一张
         window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
         await window.WhenIdleAsync();
-        AssertShowing(window, "Image 1 of 3", "a.png", new PixelSize(40, 30));
+        AssertShowing(window, "第 1 张 / 共 3 张", "a.png", new PixelSize(40, 30));
 
         // 在第一张再往前：绕到最后一张
         window.KeyPressQwerty(PhysicalKey.ArrowLeft, RawInputModifiers.None);
         await window.WhenIdleAsync();
-        AssertShowing(window, "Image 3 of 3", "c.png", new PixelSize(60, 10));
+        AssertShowing(window, "第 3 张 / 共 3 张", "c.png", new PixelSize(60, 10));
 
         Click(window, "PreviousButton");
         await window.WhenIdleAsync();
-        AssertShowing(window, "Image 2 of 3", "b.png", new PixelSize(50, 20));
+        AssertShowing(window, "第 2 张 / 共 3 张", "b.png", new PixelSize(50, 20));
 
         window.Close();
     }
@@ -60,7 +60,7 @@ public class MainWindowInteractionTests
         // 只有一张时按方向键什么也不该发生
         window.KeyPressQwerty(PhysicalKey.ArrowRight, RawInputModifiers.None);
         await window.WhenIdleAsync();
-        Assert.Equal("Image 1 of 1", Find<TextBlock>(window, "ImageCountText").Text);
+        Assert.Equal("第 1 张 / 共 1 张", Find<TextBlock>(window, "ImageCountText").Text);
 
         await window.LoadFilesAsync([a.Path, b.Path]);
         await window.WhenIdleAsync();
@@ -142,7 +142,7 @@ public class MainWindowInteractionTests
         Assert.Equal(2, window.Zoom);
         Assert.Equal(new Point(origin.X - 10, origin.Y - 10), window.ViewOffset);
         Assert.Equal(128, Find<Image>(window, "PreviewImage").Width);
-        Assert.Equal("Zoom: 2x", Find<TextBlock>(window, "ZoomText").Text);
+        Assert.Equal("预览放大：2×", Find<TextBlock>(window, "ZoomText").Text);
 
         // 在同一点缩回去，应当严格还原
         window.MouseWheel(pointer, new Vector(0, -1));
@@ -215,7 +215,7 @@ public class MainWindowInteractionTests
         await window.HandleDroppedPathsAsync([folder]);
         await window.WhenIdleAsync();
 
-        AssertShowing(window, "Image 1 of 2", "a.png", new PixelSize(20, 20));
+        AssertShowing(window, "第 1 张 / 共 2 张", "a.png", new PixelSize(20, 20));
 
         window.Close();
     }
@@ -228,8 +228,8 @@ public class MainWindowInteractionTests
 
         await window.HandleDroppedPathsAsync([Path.Combine(file.Directory, "notes.txt"), Path.Combine(file.Directory, "missing.png")]);
 
-        Assert.StartsWith("No supported images", Find<TextBlock>(window, "StatusText").Text);
-        AssertShowing(window, "Image 1 of 1", "keep.png", new PixelSize(30, 30));
+        Assert.StartsWith("拖入的内容里没有受支持的图片", Find<TextBlock>(window, "StatusText").Text);
+        AssertShowing(window, "第 1 张 / 共 1 张", "keep.png", new PixelSize(30, 30));
 
         window.Close();
     }

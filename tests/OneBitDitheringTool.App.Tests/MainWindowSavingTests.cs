@@ -53,7 +53,7 @@ public class MainWindowSavingTests
                 Assert.Equal(settings.Render(source, TestContext.Current.CancellationToken).ToRgba().Pixels, saved.Pixels);
             }
 
-            Assert.Equal($"Saved 2 image(s) to {output}", Find<TextBlock>(window, "StatusText").Text);
+            Assert.Equal($"已保存 2 张图片到 {output}", Find<TextBlock>(window, "StatusText").Text);
             Assert.True(Find<Button>(window, "SaveAllButton").IsEnabled);
         }
         finally
@@ -84,8 +84,8 @@ public class MainWindowSavingTests
             await window.SaveAllToAsync(output);
 
             string status = Find<TextBlock>(window, "StatusText").Text!;
-            Assert.StartsWith("Saved 1 of 2 image(s)", status);
-            Assert.Contains("Failed: broken.png", status);
+            Assert.StartsWith("已保存 1/2 张图片", status);
+            Assert.Contains("失败：broken.png", status);
             Assert.True(File.Exists(Path.Combine(output, "good.png")));
         }
         finally

@@ -10,6 +10,7 @@ namespace OneBitDitheringTool.App;
 /// <summary>
 /// 主窗口：左侧预览，右侧参数面板。本文件负责界面的搭建与「控件 ⇄ 设置」的转换，
 /// 图片载入与渲染结果见 MainWindow.Loading.cs，预览的缩放平移见 MainWindow.View.cs。
+/// 界面文字为中文，直接写在 XAML 与代码里；目前没有多语言切换，需要时再抽成资源文件。
 /// </summary>
 public partial class MainWindow : Window
 {

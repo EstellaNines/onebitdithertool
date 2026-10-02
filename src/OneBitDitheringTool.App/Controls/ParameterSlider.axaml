@@ -13,7 +13,7 @@
               BorderThickness="0"
               HorizontalAlignment="Left"
               Click="OnResetClick"
-              ToolTip.Tip="Click to reset to the default value" />
+              ToolTip.Tip="点击名称复位为默认值" />
       <TextBlock Name="ValueText"
                  Grid.Column="1"
                  VerticalAlignment="Center"

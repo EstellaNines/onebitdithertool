@@ -18,7 +18,7 @@ public partial class MainWindow
         {
             IReadOnlyList<IStorageFolder> folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
             {
-                Title = "Choose the output folder",
+                Title = "选择输出文件夹",
                 AllowMultiple = false,
             });
 
@@ -31,7 +31,7 @@ public partial class MainWindow
         catch (Exception exception)
         {
             // 界面事件处理的最外层：转成状态栏提示，不让异常把程序崩掉
-            SetStatus($"Save failed: {exception.Message}");
+            SetStatus($"保存失败：{exception.Message}");
         }
     }
 
@@ -59,7 +59,7 @@ public partial class MainWindow
         {
             if (p.Completed < p.Total)
             {
-                SetStatus($"Saving {p.Completed + 1} of {p.Total}: {p.FileName}");
+                SetStatus($"正在保存第 {p.Completed + 1}/{p.Total} 张：{p.FileName}");
             }
         });
 
@@ -74,7 +74,7 @@ public partial class MainWindow
         }
         catch (Exception exception)
         {
-            SetStatus($"Save failed: {exception.Message}");
+            SetStatus($"保存失败：{exception.Message}");
         }
         finally
         {
@@ -89,11 +89,11 @@ public partial class MainWindow
     {
         if (result.Failures.Count == 0)
         {
-            return $"Saved {result.Saved.Count} image(s) to {folder}";
+            return $"已保存 {result.Saved.Count} 张图片到 {folder}";
         }
 
         BatchFailure first = result.Failures[0];
-        string more = result.Failures.Count > 1 ? $" (+{result.Failures.Count - 1} more)" : string.Empty;
-        return $"Saved {result.Saved.Count} of {total} image(s) to {folder}. Failed: {Path.GetFileName(first.Path)}: {first.Message}{more}";
+        string more = result.Failures.Count > 1 ? $"（另有 {result.Failures.Count - 1} 张失败）" : string.Empty;
+        return $"已保存 {result.Saved.Count}/{total} 张图片到 {folder}。失败：{Path.GetFileName(first.Path)}：{first.Message}{more}";
     }
 }
